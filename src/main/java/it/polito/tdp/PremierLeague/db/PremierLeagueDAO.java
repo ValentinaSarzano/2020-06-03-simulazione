@@ -6,8 +6,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import it.polito.tdp.PremierLeague.model.Action;
+import it.polito.tdp.PremierLeague.model.Adiacenza;
 import it.polito.tdp.PremierLeague.model.Player;
 
 public class PremierLeagueDAO {
@@ -59,4 +61,64 @@ public class PremierLeagueDAO {
 			return null;
 		}
 	}
+	
+	public void getVertici(Double x, Map<Integer, Player> idMap) {
+		String sql = "SELECT p.* "
+				+ "FROM players p, actions a "
+				+ "WHERE p.PlayerID = a.PlayerID "
+				+ "GROUP BY a.PlayerID "
+				+ "HAVING AVG(a.Goals) > ?";
+		Connection conn = DBConnect.getConnection();
+
+		try {
+			PreparedStatement st = conn.prepareStatement(sql);
+			st.setDouble(1, x);
+			ResultSet res = st.executeQuery();
+			while (res.next()) {
+
+				if(!idMap.containsKey(res.getInt("p.PlayerID"))) {
+					Player player = new Player(res.getInt("p.PlayerID"), res.getString("p.Name"));
+					idMap.put(res.getInt("p.PlayerID"), player);
+					
+				}
+			}
+			conn.close();
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return;
+		}
+	}
+	
+	public List<Adiacenza> getAdiacenze(Map<Integer, Player> idMap){
+		String sql = "SELECT a1.PlayerID AS id1, a2.PlayerID AS id2, (SUM(a1.TimePlayed) - SUM(a2.TimePlayed)) AS peso "
+				+ "FROM actions a1, actions a2 "
+				+ "WHERE a1.PlayerID < a2.PlayerID "
+				+ "AND a1.TeamID != a2.TeamID "
+				+ "AND a1.`Starts` = 1 AND a2.`Starts` = 1 "
+				+ "AND a1.MatchID = a2.MatchID "
+				+ "GROUP BY id1, id2 ";
+		List<Adiacenza> result = new ArrayList<>();
+		Connection conn = DBConnect.getConnection();
+
+		try {
+			PreparedStatement st = conn.prepareStatement(sql);
+			ResultSet res = st.executeQuery();
+			while (res.next()) {
+
+				if(idMap.containsKey(res.getInt("id1")) && idMap.containsKey(res.getInt("id2"))) {
+					Adiacenza a = new Adiacenza(idMap.get(res.getInt("id1")), idMap.get(res.getInt("id2")), res.getInt("peso"));
+				    result.add(a);
+				}
+			}
+			conn.close();
+			return result;
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	
 }

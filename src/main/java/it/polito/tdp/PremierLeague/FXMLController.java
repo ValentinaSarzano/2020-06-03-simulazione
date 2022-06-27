@@ -5,9 +5,13 @@
 package it.polito.tdp.PremierLeague;
 
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.ResourceBundle;
 
+import it.polito.tdp.PremierLeague.model.Battuto;
 import it.polito.tdp.PremierLeague.model.Model;
+import it.polito.tdp.PremierLeague.model.Player;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -45,16 +49,68 @@ public class FXMLController {
     @FXML
     void doCreaGrafo(ActionEvent event) {
 
+    	txtResult.clear();
+    	Double x = 0.0;
+    	try {
+    		x = Double.parseDouble(txtGoals.getText());
+    	}catch(NumberFormatException e) {
+    		txtResult.appendText("ERRORE: Inserire un numero valido nel campo Goal fatti!\n");
+    	}
+    	this.model.creaGrafo(x);
+    	
+    	btnTopPlayer.setDisable(false);
+    	btnDreamTeam.setDisable(false);
+    	
+    	txtResult.appendText("Grafo creato!\n");
+    	txtResult.appendText("#VERTICI: "+ this.model.nVertici()+"\n");
+    	txtResult.appendText("#ARCHI: "+ this.model.nArchi());
+		
+    	
     }
 
     @FXML
     void doDreamTeam(ActionEvent event) {
-
+	
+    	txtResult.clear();
+    	
+    	if(!model.grafoCreato()) {
+    		txtResult.appendText("Crea prima il grafo!");
+    		return;
+    	}
+    	
+    	Integer k = 0;
+    	
+    	try {
+    		k = Integer.parseInt(txtK.getText());
+    	} catch(NumberFormatException e) {
+        	
+    		txtResult.appendText("Inserisce un valore intero per k");
+    		return;
+    	}
+    	
+    	List<Player> dreamTeam = this.model.trovaPercorso(k);
+    	int gradoTitolaritaMax = this.model.getTitolaritaMax();
+    	txtResult.appendText("DREAM TEAM - grado di titolarità: " + gradoTitolaritaMax + "\n\n");
+    	for(Player p : dreamTeam)
+    		txtResult.appendText(p.toString() + "\n");
+    	
+    	
     }
 
     @FXML
     void doTopPlayer(ActionEvent event) {
-
+    	txtResult.clear();
+    	if(!this.model.grafoCreato()) {
+    	   txtResult.appendText("ERRORE: Creare prima il grafo!\n");	
+    	}
+    	Player topPlayer = this.model.getTopPlayer();
+    	List<Battuto> battuti = new ArrayList<>(this.model.getBattuti(topPlayer));
+    	txtResult.appendText("TOP PLAYER: " + topPlayer + "\n");
+    	txtResult.appendText("AVVERSARI BATTUTI:\n");
+    	for(Battuto b: battuti) {
+        	txtResult.appendText(b.getPlayer() + " | " + b.getPeso() + "\n");
+        }
+    
     }
 
     @FXML // This method is called by the FXMLLoader when initialization is complete
@@ -70,5 +126,7 @@ public class FXMLController {
     
     public void setModel(Model model) {
     	this.model = model;
+    	btnTopPlayer.setDisable(true);
+    	btnDreamTeam.setDisable(true);
     }
 }
